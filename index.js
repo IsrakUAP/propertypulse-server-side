@@ -30,12 +30,17 @@ async function run() {
      
      
     const propertyCollection = client.db("propertydb").collection("property");
+    const reviewCollection = client.db("propertydb").collection("review");
 
     app.get('/property',async(req,res)=>{
       const result = await propertyCollection.find().toArray();
       res.send(result);
     })
-
+    
+    app.get('/review',async(req,res)=>{
+      const result = await reviewCollection.find().toArray();
+      res.send(result);
+    })
 
 
 
