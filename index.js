@@ -43,6 +43,13 @@ async function run() {
     })
 
 
+    app.post('/review',async(req,res)=>{
+      const newReview = req.body;
+      const result = await reviewCollection.insertOne(newReview);
+      res.send(result);
+  })
+
+
 
 
     // Send a ping to confirm a successful connection
