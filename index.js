@@ -44,6 +44,15 @@ async function run() {
     })
 
 
+    app.get('/wishlist',async(req,res)=>{
+      const email = req.query.email;
+      const query = {email : email};
+      const result = await wishlistCollection.find(query).toArray();
+      res.send(result);
+    })
+
+
+
     app.post('/review',async(req,res)=>{
       const newReview = req.body;
       const result = await reviewCollection.insertOne(newReview);
