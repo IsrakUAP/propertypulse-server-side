@@ -31,6 +31,7 @@ async function run() {
      
     const propertyCollection = client.db("propertydb").collection("property");
     const reviewCollection = client.db("propertydb").collection("review");
+    const wishlistCollection = client.db("propertydb").collection("wishlist");
 
     app.get('/property',async(req,res)=>{
       const result = await propertyCollection.find().toArray();
@@ -48,6 +49,15 @@ async function run() {
       const result = await reviewCollection.insertOne(newReview);
       res.send(result);
   })
+
+
+
+
+  app.post('/wishlist',async(req,res)=>{
+    const newWishlist = req.body;
+    const result = await wishlistCollection.insertOne(newWishlist);
+    res.send(result);
+})
 
 
 
