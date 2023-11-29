@@ -33,7 +33,7 @@ async function run() {
     const reviewCollection = client.db("propertydb").collection("review");
     const wishlistCollection = client.db("propertydb").collection("wishlist");
     const submitOfferCollection = client.db("propertydb").collection("submitOffer");
-  
+    const userCollection = client.db("propertydb").collection("users");  
 
     app.get('/property', async (req, res) => {
       const result = await propertyCollection.find().toArray();
@@ -52,6 +52,7 @@ async function run() {
       const result = await wishlistCollection.find(query).toArray();
       res.send(result);
     })
+
 
 
 
@@ -102,6 +103,21 @@ app.delete('/review/:id', async (req, res) => {
   const result = await reviewCollection.deleteOne(query);
   res.send(result);
 })
+
+
+
+
+app.post('/users', async (req, res) => {
+  const user = req.body;
+  const query = {email: user.email}
+  const existUser = await userCollection.findOne(query);
+  if(existUser){
+    return res.send({message:'user exist',insertedId: null})
+  }
+  const result = await userCollection.insertOne(user);
+  res.send(result);
+})
+
 
 
 
