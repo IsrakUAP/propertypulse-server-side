@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const app = express();
 const port = process.env.PORT || 5000;
@@ -27,48 +27,53 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
-     
-     
+
+
     const propertyCollection = client.db("propertydb").collection("property");
     const reviewCollection = client.db("propertydb").collection("review");
     const wishlistCollection = client.db("propertydb").collection("wishlist");
 
-    app.get('/property',async(req,res)=>{
+    app.get('/property', async (req, res) => {
       const result = await propertyCollection.find().toArray();
       res.send(result);
     })
-    
-    app.get('/review',async(req,res)=>{
+
+    app.get('/review', async (req, res) => {
       const result = await reviewCollection.find().toArray();
       res.send(result);
     })
 
 
-    app.get('/wishlist',async(req,res)=>{
+    app.get('/wishlist', async (req, res) => {
       const email = req.query.email;
-      const query = {email : email};
+      const query = { email: email };
       const result = await wishlistCollection.find(query).toArray();
       res.send(result);
     })
 
 
 
-    app.post('/review',async(req,res)=>{
+    app.post('/review', async (req, res) => {
       const newReview = req.body;
       const result = await reviewCollection.insertOne(newReview);
       res.send(result);
-  })
+    })
 
 
 
 
-  app.post('/wishlist',async(req,res)=>{
-    const newWishlist = req.body;
-    const result = await wishlistCollection.insertOne(newWishlist);
-    res.send(result);
-})
+    app.post('/wishlist', async (req, res) => {
+      const newWishlist = req.body;
+      const result = await wishlistCollection.insertOne(newWishlist);
+      res.send(result);
+    })
 
-
+    app.delete('/wishlist/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await wishlistCollection.deleteOne(query);
+      res.send(result);
+ })
 
 
     // Send a ping to confirm a successful connection
@@ -86,10 +91,10 @@ run().catch(console.dir);
 
 
 
-app.get('/', (req,res) => {
-    res.send('server is running')
+app.get('/', (req, res) => {
+  res.send('server is running')
 })
 
-app.listen(port,()=>{
-    console.log(`Server is running on port: ${port}`)
+app.listen(port, () => {
+  console.log(`Server is running on port: ${port}`)
 })
