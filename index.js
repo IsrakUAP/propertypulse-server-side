@@ -32,6 +32,8 @@ async function run() {
     const propertyCollection = client.db("propertydb").collection("property");
     const reviewCollection = client.db("propertydb").collection("review");
     const wishlistCollection = client.db("propertydb").collection("wishlist");
+    const submitOfferCollection = client.db("propertydb").collection("submitOffer");
+  
 
     app.get('/property', async (req, res) => {
       const result = await propertyCollection.find().toArray();
@@ -74,6 +76,17 @@ async function run() {
       const result = await wishlistCollection.deleteOne(query);
       res.send(result);
  })
+
+
+
+
+ app.post('/submitOffer', async (req, res) => {
+  const newSubmitOffer = req.body;
+  const result = await submitOfferCollection.insertOne(newSubmitOffer);
+  res.send(result);
+})
+
+
 
 
     // Send a ping to confirm a successful connection
