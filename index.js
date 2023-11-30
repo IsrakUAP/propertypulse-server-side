@@ -314,6 +314,39 @@ async function run() {
 
 
 
+    app.patch('/submitOffer/reject/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          status: 'rejected',
+        },
+      };
+    
+      const result = await submitOfferCollection.updateOne(query, updatedDoc);
+      res.send(result);
+    });
+
+
+
+    app.patch('/submitOffer/accept/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+         status: 'accepted',
+        },
+      };
+    
+      const result = await submitOfferCollection.updateOne(query, updatedDoc);
+      res.send(result);
+    });
+
+
+
+
+
+
 
 
     // Send a ping to confirm a successful connection
