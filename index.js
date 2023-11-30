@@ -48,6 +48,24 @@ async function run() {
       res.send(result);
     })
 
+
+    app.post('/property', async (req, res) => {
+      const newProperty = req.body;
+      const result = await propertyCollection.insertOne(newProperty);
+      res.send(result);
+    })
+
+    app.delete('/property/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await propertyCollection.deleteOne(query);
+      res.send(result);
+    })
+    
+
+
+
+    
     app.get('/review', async (req, res) => {
       const result = await reviewCollection.find().toArray();
       res.send(result);
@@ -174,6 +192,7 @@ async function run() {
       const result = await userCollection.find().toArray();
       res.send(result);
     })
+    
 
 
 
@@ -193,7 +212,7 @@ async function run() {
 
 
 
-    app.get('/users/agent/:email', verifyToken, verifyAdmin, async (req, res) => {
+    app.get('/users/agent/:email', verifyToken, verifyAgent, async (req, res) => {
       const email = req.params.email;
       if (email !== req.decoded.email) {
         return res.status(403).send({ message: 'forbidden access' })
@@ -274,6 +293,8 @@ async function run() {
       const result = await propertyCollection.updateOne(query, upadtedDoc);
       res.send(result);
     })
+
+
 
 
     app.patch('/property/reject/:id', verifyToken, verifyAdmin, async (req, res) => {
