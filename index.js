@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const app = express();
@@ -33,7 +34,14 @@ async function run() {
     const reviewCollection = client.db("propertydb").collection("review");
     const wishlistCollection = client.db("propertydb").collection("wishlist");
     const submitOfferCollection = client.db("propertydb").collection("submitOffer");
-    const userCollection = client.db("propertydb").collection("users");  
+    const userCollection = client.db("propertydb").collection("users");
+
+
+    app.post('/jwt', async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+      res.send({ token });
+    })
 
     app.get('/property', async (req, res) => {
       const result = await propertyCollection.find().toArray();
@@ -76,98 +84,212 @@ async function run() {
       const query = { _id: new ObjectId(id) };
       const result = await wishlistCollection.deleteOne(query);
       res.send(result);
- })
+    })
 
 
 
 
- app.post('/submitOffer', async (req, res) => {
-  const newSubmitOffer = req.body;
-  const result = await submitOfferCollection.insertOne(newSubmitOffer);
-  res.send(result);
-})
+    app.post('/submitOffer', async (req, res) => {
+      const newSubmitOffer = req.body;
+      const result = await submitOfferCollection.insertOne(newSubmitOffer);
+      res.send(result);
+    })
 
 
 
-app.get('/submitOffer', async (req, res) => {
-  const result = await submitOfferCollection.find().toArray();
-  res.send(result);
-})
-
-
-
-
-app.delete('/review/:id', async (req, res) => {
-  const id = req.params.id;
-  const query = { _id: new ObjectId(id) };
-  const result = await reviewCollection.deleteOne(query);
-  res.send(result);
-})
+    app.get('/submitOffer', async (req, res) => {
+      const result = await submitOfferCollection.find().toArray();
+      res.send(result);
+    })
 
 
 
 
-app.post('/users', async (req, res) => {
-  const user = req.body;
-  const query = {email: user.email}
-  const existUser = await userCollection.findOne(query);
-  if(existUser){
-    return res.send({message:'user exist',insertedId: null})
-  }
-  const result = await userCollection.insertOne(user);
-  res.send(result);
-})
-
-app.get('/users', async (req, res) => {
-  const result = await userCollection.find().toArray();
-  res.send(result);
-})
+    app.delete('/review/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await reviewCollection.deleteOne(query);
+      res.send(result);
+    })
 
 
-app.delete('/users/:id', async (req, res) => {
-  const id = req.params.id;
-  const query = { _id: new ObjectId(id) };
-  const result = await userCollection.deleteOne(query);
-  res.send(result);
-})
 
 
-app.patch('/users/admin/:id', async (req, res) =>{
-  const id = req.params.id;
-  const query = { _id: new ObjectId(id) };
-  const upadtedDoc = {
-    $set:{
-      role:'admin'
+    app.post('/users', async (req, res) => {
+      const user = req.body;
+      const query = { email: user.email }
+      const existUser = await userCollection.findOne(query);
+      if (existUser) {
+        return res.send({ message: 'user exist', insertedId: null })
+      }
+      const result = await userCollection.insertOne(user);
+      res.send(result);
+    })
+
+    const verifyToken = (req, res, next) => {
+      console.log('inside verify token', req.headers.authorization);
+      if (!req.headers.authorization) {
+        return res.status(401).send({ message: 'unauthorized access' });
+      }
+      const token = req.headers.authorization.split(' ')[1];
+      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+          return res.status(401).send({ message: 'unauthorized access' })
+        }
+        req.decoded = decoded;
+        next();
+      })
     }
-  }
-  const result = await userCollection.updateOne(query,upadtedDoc);
-  res.send(result);
-})
 
-
-app.patch('/users/agent/:id', async (req, res) =>{
-  const id = req.params.id;
-  const query = { _id: new ObjectId(id) };
-  const upadtedDoc = {
-    $set:{
-      role:'agent'
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const isAdmin = user?.role === 'admin';
+      if (!isAdmin) {
+        return res.status(403).send({ message: 'forbidden access' });
+      }
+      next();
     }
-  }
-  const result = await userCollection.updateOne(query,upadtedDoc);
-  res.send(result);
-})
 
-app.patch('/users/:id', async (req, res) =>{
-  const id = req.params.id;
-  const query = { _id: new ObjectId(id) };
-  const upadtedDoc = {
-    $set:{
-      role:'fraud'
+
+
+    const verifyAgent = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const isAgent = user?.role === 'agent';
+      if (!isAgent) {
+        return res.status(403).send({ message: 'forbidden access' });
+      }
+      next();
     }
-  }
-  const result = await userCollection.updateOne(query,upadtedDoc);
-  res.send(result);
-})
+
+
+
+
+
+
+    app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    })
+
+
+
+    app.get('/users/admin/:email', verifyToken, verifyAdmin, async (req, res) => {
+      const email = req.params.email;
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: 'forbidden access' })
+      }
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const admin = false;
+      if (user) {
+        admin = user?.role === 'admin';
+      }
+      res.send({ admin });
+    })
+
+
+
+    app.get('/users/agent/:email', verifyToken, verifyAdmin, async (req, res) => {
+      const email = req.params.email;
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: 'forbidden access' })
+      }
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const agent = false;
+      if (user) {
+        agent = user?.role === 'agent';
+      }
+      res.send({ agent });
+    })
+
+
+
+
+
+
+
+    app.delete('/users/:id', verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await userCollection.deleteOne(query);
+      res.send(result);
+    })
+
+
+    app.patch('/users/admin/:id', verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const upadtedDoc = {
+        $set: {
+          role: 'admin'
+        }
+      }
+      const result = await userCollection.updateOne(query, upadtedDoc);
+      res.send(result);
+    })
+
+
+    app.patch('/users/agent/:id', verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const upadtedDoc = {
+        $set: {
+          role: 'agent'
+        }
+      }
+      const result = await userCollection.updateOne(query, upadtedDoc);
+      res.send(result);
+    })
+
+    app.patch('/users/:id', verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const upadtedDoc = {
+        $set: {
+          role: 'fraud'
+        }
+      }
+      const result = await userCollection.updateOne(query, upadtedDoc);
+      res.send(result);
+    })
+
+
+
+
+
+
+    app.patch('/property/verify/:id', verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const upadtedDoc = {
+        $set: {
+          verificationStatus: 'verify'
+        }
+      }
+      const result = await propertyCollection.updateOne(query, upadtedDoc);
+      res.send(result);
+    })
+
+
+    app.patch('/property/reject/:id', verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const upadtedDoc = {
+        $set: {
+          verificationStatus: 'reject'
+        }
+      }
+      const result = await propertyCollection.updateOne(query, upadtedDoc);
+      res.send(result);
+    })
+
+
+
 
 
 
